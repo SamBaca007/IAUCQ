@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 public class DeteccionPorProximidad : MonoBehaviour
 {
     public GameObject ObjetoADetectar;
-    public Transform PosicionDeObjetoADetectar;
+
     public float RangoDeDeteccion = 5.0f;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

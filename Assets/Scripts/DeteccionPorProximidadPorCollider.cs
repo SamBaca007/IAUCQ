@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DeteccionPorProximidadPorCollider : MonoBehaviour
@@ -12,19 +14,32 @@ public class DeteccionPorProximidadPorCollider : MonoBehaviour
 
     public bool imprimirMensajesDeDebug = false;
 
+    [SerializeField] private List<GameObject> objetosConocidos = new List<GameObject>();
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        objetosConocidos.Add(gameObject);
+        foreach (var objeto in objetosConocidos)
+        {
+            Debug.Log(objeto.name + " está en los objetos conocidos");
+        }
+
         _colliderDeDeteccion = GetComponent<SphereCollider>();
-        if(imprimirMensajesDeDebug)
-        Debug.Log(message: "Radio del collider propio es: " + _colliderDeDeteccion.radius, gameObject);
+        if (_colliderDeDeteccion != null)
+        {
+            _colliderDeDeteccion.radius = RangoDeDeteccion;
+
+            if (imprimirMensajesDeDebug)
+                Debug.Log("radio del collider propio es: " + _colliderDeDeteccion.radius, gameObject);
+        }
 
         SphereCollider sphereCollider = gameObjectEjemplo.GetComponent<SphereCollider>();
         if(sphereCollider != null)
         {
             if (imprimirMensajesDeDebug)
-                Debug.Log(message: "Radio del collider de gameObjectEjemplo es: " + gameObjectEjemplo.GetComponent<SphereCollider>().radius,
-            gameObject);
+                Debug.Log(message: "Radio del collider de gameObjectEjemplo es: " +
+                    gameObjectEjemplo.GetComponent<SphereCollider>().radius, gameObject);
         }
         else
         {
@@ -35,24 +50,8 @@ public class DeteccionPorProximidadPorCollider : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector3 diferenciaDePosicion = gameObject.transform.position - ObjetoADetectar.transform.position;
-
-        float distanciaEntrePosiciones = Mathf.Sqrt(diferenciaDePosicion.x * diferenciaDePosicion.x +
-                                         diferenciaDePosicion.y * diferenciaDePosicion.y +
-                                         diferenciaDePosicion.z * diferenciaDePosicion.z);
-
-        if (distanciaEntrePosiciones > _colliderDeDeteccion.radius)
-        {
-            if (imprimirMensajesDeDebug)
-                Debug.Log(message: "El objeto a detectar está fuera de mi rango de detección");
-        }
-        else
-        {
-            if (imprimirMensajesDeDebug)
-                Debug.Log(message: "El objeto a detectar está dentro de mi rango de detección, ha sido detectado.");
-        }
+        
     }
-
     private void OnCollisionEnter(Collision other)
     {
         if (imprimirMensajesDeDebug)
@@ -63,5 +62,17 @@ public class DeteccionPorProximidadPorCollider : MonoBehaviour
     {
         if (imprimirMensajesDeDebug)
             Debug.Log(message: "On collision exit contra: " + other.gameObject.name, gameObject);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (imprimirMensajesDeDebug)
+            Debug.Log("On Trigger enter contra: " + other.gameObject.name, gameObject);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (imprimirMensajesDeDebug)
+            Debug.Log("On Trigger Exit contra: " + other.gameObject.name, gameObject);
     }
 }
