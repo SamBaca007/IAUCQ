@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Código inspirado por: https://youtu.be/XrZg2rQtkDA
-// Creación de código asistida por Google Gemini. Conversación: 
+// Creación de código asistida por Google Gemini. Conversación adjuntada con el repositorio.
 public class VisionConeBasic : MonoBehaviour
 {
     [Range(0.0f, 360.0f)]
