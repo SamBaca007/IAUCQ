@@ -226,8 +226,8 @@ Transform:
   m_GameObject: {fileID: 274221175}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.164, z: 0}
-  m_LocalScale: {x: 83.87, y: 0.01, z: 55.22}
+  m_LocalPosition: {x: 0, y: -1.2879, z: 0}
+  m_LocalScale: {x: 83.87, y: 2.2578015, z: 55.22}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -332,13 +332,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.2145616, y: 0.10968601, z: -0.02425655, w: 0.97022885}
-  m_LocalPosition: {x: -3.09, y: 5.31, z: -9.59}
+  m_LocalRotation: {x: 0.27437213, y: 0.006713294, z: -0.0019154993, w: 0.9615983}
+  m_LocalPosition: {x: 3, y: 5.31, z: -12.02}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 24.94, y: 12.9, z: 0}
+  m_LocalEulerAnglesHint: {x: 31.85, y: 0.8, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -665,7 +665,7 @@ Transform:
   m_GameObject: {fileID: 1160249264}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.21, y: 0.386, z: -1.87253}
+  m_LocalPosition: {x: 6.9, y: 0.386, z: -1.87253}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -684,8 +684,9 @@ GameObject:
   - component: {fileID: 1461302809}
   - component: {fileID: 1461302808}
   - component: {fileID: 1461302812}
+  - component: {fileID: 1461302813}
   m_Layer: 0
-  m_Name: Robber
+  m_Name: Target
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -780,7 +781,7 @@ Transform:
   m_GameObject: {fileID: 1461302807}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.17, y: 0.853, z: -0.48}
+  m_LocalPosition: {x: 0.76, y: 0.853, z: 4.76}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -809,10 +810,31 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!135 &1461302813
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1461302807}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1900539633
 GameObject:
   m_ObjectHideFlags: 0
@@ -830,6 +852,7 @@ GameObject:
   - component: {fileID: 1900539640}
   - component: {fileID: 1900539641}
   - component: {fileID: 1900539642}
+  - component: {fileID: 1900539643}
   m_Layer: 0
   m_Name: Cop
   m_TagString: Untagged
@@ -924,7 +947,7 @@ Transform:
   m_GameObject: {fileID: 1900539633}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.78, y: 0.386, z: 2.16}
+  m_LocalPosition: {x: 0.78, y: 0.386, z: -5.88}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -972,11 +995,11 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1900539640
 MonoBehaviour:
@@ -1005,8 +1028,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeteccionPorProximidadPorCollider
   RangoDeDeteccion: 5
-  gameObjectEjemplo: {fileID: 0}
-  ObjetoADetectar: {fileID: 0}
+  gameObjectEjemplo: {fileID: 1461302807}
+  ObjetoADetectar: {fileID: 1461302807}
   imprimirMensajesDeDebug: 0
   objetosConocidos: []
 --- !u!114 &1900539642
@@ -1021,8 +1044,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfc48f522a6a4ab46bd7ba8102119f99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VisionConeBasic
+  VisionAngle: 45
+  VisionDistance: 5
+  Target: {fileID: 1461302811}
+  TargetOnSight: 0
+--- !u!114 &1900539643
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900539633}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79c2b21fa19fea14f9c8884072918de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VisionCone
   VisionAngle: 90
-  VisionDistance: 6
+  VisionDistance: 5
+  maxSpeed: 3
+  TargetOnSight: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
