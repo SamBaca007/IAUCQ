@@ -1,0 +1,95 @@
+using System;
+using System.Collections.Generic;
+using System.Numerics;
+using UnityEngine;
+using Vector3 = UnityEngine.Vector3;
+
+[RequireComponent(typeof(SphereCollider), typeof(SentidoDeVision))]
+public class EnemigoBase : MonoBehaviour
+{
+    [Tooltip("Límite de velocidad al cual puede ir este agente")]
+
+    [SerializeField] protected float maxSpeed = 5.0f;
+
+    [SerializeField] protected float maxForce = 5.0f;
+
+    [Tooltip("Velocidad actual que tiene este agente. Está limitada por maxSpeed")]
+    protected Vector3 CurrentSpeed = Vector3.zero;
+
+    [SerializeField] protected float mass = 1.0f;
+
+    protected int Health = 5;
+    protected int ContactDamage = 1;
+
+    protected Collider OwnCollider;
+
+    protected SentidoDeVision SentidoDeVision;
+    protected GameObject Objetivo;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    protected void Start()
+    {
+        SentidoDeVision = GetComponent<SentidoDeVision>();
+        if (SentidoDeVision == null)
+        {
+            Debug.LogError("No hay componente SentidoDeVision asignado", gameObject);
+        }
+
+        OwnCollider = GetComponent<Collider>();
+        if (OwnCollider == null)
+        {
+            Debug.LogError("No hay componente Collider asignado a colliderPropio", gameObject);
+        }
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        List<GameObject> objetosConocidos = SentidoDeVision.GetObjetosConocidos();
+        if (objetosConocidos.Count > 0)
+        {
+            Objetivo = objetosConocidos[0];
+
+            // Documento original de los steering behaviors: https://www.red3d.com/cwr/papers/1999/gdc99steer.pdf
+
+            Vector3 steeringForce = Seek();
+
+            ActualizarAceleracionVelocidadYPosicion(steeringForce);
+ 
+        }
+
+    }
+
+    protected Vector3 Flee()
+    {
+        return SteeringBehaviors.Flee(Objetivo.transform.position, transform.position,
+            maxSpeed, CurrentSpeed, maxForce);
+    }
+
+    protected Vector3 Seek()
+    {
+        return SteeringBehaviors.Seek(Objetivo.transform.position, transform.position,
+            maxSpeed, CurrentSpeed, maxForce);
+    }
+
+    protected void ActualizarAceleracionVelocidadYPosicion(Vector3 steeringForce)
+    {
+        transform.position = SteeringBehaviors.ActualizarAceleracionVelocidadYPosicion(steeringForce, mass, maxSpeed,
+            ref CurrentSpeed, transform.position);
+    }
+
+    void AplicarGravedad()
+    {
+        Vector3 direccionDeGravedad = new Vector3(0.0f, -1, 0.0f);
+        float magnitudDeGravedad = 9.81f;
+
+        CurrentSpeed += direccionDeGravedad * (Time.deltaTime * magnitudDeGravedad);
+
+        transform.position += CurrentSpeed * Time.deltaTime;
+
+        Debug.Log($"Aceleración es: {direccionDeGravedad * magnitudDeGravedad}, " +
+                  $"velocidad es: {CurrentSpeed}, posición es: {transform.position}");
+
+    }
+}
