@@ -1,29 +1,38 @@
 using System.Collections.Generic;
 using UnityEngine;
+
 public class EnemigoPesado : EnemigoBase
 {
-
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
     void Update()
     {
-        List<GameObject> objetosConocidos = SentidoDeVision.GetObjetosConocidos();
+        List<GameObject> objetosConocidos = SentidoDeVision.GetKnownObjects();
         if (objetosConocidos.Count > 0)
         {
+            Target = objetosConocidos[0];
 
-            Objetivo = objetosConocidos[0];
+            // Para predecir, necesitamos saber a qué velocidad se mueve el jugador
+            Vector3 velocidadJugador = Vector3.zero;
+            Rigidbody rbJugador = Target.GetComponent<Rigidbody>();
+            if (rbJugador != null)
+            {
+                velocidadJugador = rbJugador.linearVelocity;
+            }
 
-            // Documento original de los steering behaviors: https://www.red3d.com/cwr/papers/1999/gdc99steer.pdf
-
-            Vector3 steeringForce = Seek();
+            // Llamamos a Pursuit en lugar de Seek
+            Vector3 steeringForce = SteeringBehaviors.Pursuit(
+                Target.transform.position,
+                velocidadJugador,
+                transform.position,
+                maxSpeed,
+                CurrentSpeed,
+                maxForce
+            );
 
             ActualizarAceleracionVelocidadYPosicion(steeringForce);
+        }
+        else
+        {
+            Target = null;
         }
     }
 }

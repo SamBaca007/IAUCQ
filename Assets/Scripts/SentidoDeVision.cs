@@ -7,14 +7,25 @@ public class SentidoDeVision : MonoBehaviour
     [SerializeField]
     private float radioDeColliderDeDeteccion = 5.0f;
 
+    public float GetColliderDetectionRadius()
+    {
+        return radioDeColliderDeDeteccion;
+    }
+
     private SphereCollider _colliderDeDeteccion;
 
     [SerializeField]
     private List<GameObject> objetosConocidos = new List<GameObject>();
 
-    public List<GameObject> GetObjetosConocidos()
+    public List<GameObject> GetKnownObjects()
     {
         return objetosConocidos;
+    }
+
+    private List<GameObject> obstaculosConocidos = new List<GameObject>();
+    public List<GameObject> GetKnownObstacles()
+    {
+        return obstaculosConocidos;
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

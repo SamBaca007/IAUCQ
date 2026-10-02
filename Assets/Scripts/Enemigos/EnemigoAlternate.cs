@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.VisualScripting;
 using UnityEngine;
 
 // Para más explicaciones sobre corrutinas, este video está cortito y muy útil:
@@ -16,7 +17,7 @@ public class EnemigoAlternante : EnemigoBase
     private Coroutine _coroutineImprimirCada5SegundosHastaQueMeDetengan;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    new void Start()
     {
         base.Start();
 
@@ -29,12 +30,12 @@ public class EnemigoAlternante : EnemigoBase
     // Update is called once per frame
     void Update()
     {
-        List<GameObject> objetosConocidos = SentidoDeVision.GetObjetosConocidos();
+        List<GameObject> objetosConocidos = SentidoDeVision.GetKnownObjects();
         if (objetosConocidos.Count > 0)
         {
             AlternarSeekYFlee();
 
-            Objetivo = objetosConocidos[0];
+            Target = objetosConocidos[0];
 
             // Documento original de los steering behaviors: https://www.red3d.com/cwr/papers/1999/gdc99steer.pdf
 
@@ -49,6 +50,10 @@ public class EnemigoAlternante : EnemigoBase
             }
 
             ActualizarAceleracionVelocidadYPosicion(steeringForce);
+        }
+        else
+        {
+            Target = null;
         }
 
 
@@ -82,5 +87,15 @@ public class EnemigoAlternante : EnemigoBase
             _estaUsandoSeek = !_estaUsandoSeek;
             _tiempoTranscurrido = 0.0f;
         }
+    }
+    protected new void OnDrawGizmos()
+    {
+        if (_estaUsandoSeek)
+            Gizmos.color = Color.red;
+        else
+            Gizmos.color = Color.yellow;
+
+
+        base.OnDrawGizmos();
     }
 }
