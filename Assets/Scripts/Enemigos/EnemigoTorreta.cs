@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+// Scripts y ajustes del proyecto asistidos por Google Gemini: https://docs.google.com/document/d/1PjI_x4DdHM9PMdR9tQgckPVaQDlcmdqp1MtO2DkF108/edit?usp=sharing
 public class EnemigoTorreta : EnemigoBase
 {
     [Header("Configuración Torreta")]
