@@ -50,40 +50,32 @@ public class SentidoDeVision : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("On trigger Enter contra: " + other.gameObject.name, gameObject);
-
-        foreach (var conocido in objetosConocidos)
+        // 1. Si el objeto está en la capa "Paredes" (o "Obstaculos"), lo añade a la lista de obstáculos
+        if (other.gameObject.layer == LayerMask.NameToLayer("Paredes"))
         {
-            if (conocido == other.gameObject)
+            if (!obstaculosConocidos.Contains(other.gameObject))
             {
-                Debug.LogWarning("On trigger enter con el objeto " + other.gameObject.name + " pero ya lo conocía", gameObject);
-                return;
+                obstaculosConocidos.Add(other.gameObject);
             }
+            return;
         }
 
-        objetosConocidos.Add(other.gameObject);
-
-        foreach (var conocido in objetosConocidos)
+        // 2. Si no es pared, se procesa como objeto conocido (Jugador, otros entes)
+        if (!objetosConocidos.Contains(other.gameObject))
         {
-            Debug.Log("el objeto " + conocido + " está en los objetos conocidos", gameObject);
+            objetosConocidos.Add(other.gameObject);
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        Debug.Log("On trigger exit contra: " + other.gameObject.name, gameObject);
-        objetosConocidos.Remove(other.gameObject);
+        // Remueve obstáculos o paredes cuando el enemigo se aleja de ellos
+        if (other.gameObject.layer == LayerMask.NameToLayer("Paredes"))
+        {
+            obstaculosConocidos.Remove(other.gameObject);
+            return;
+        }
 
-        if (objetosConocidos.Count == 0)
-        {
-            Debug.Log("ya no se conoce ningún objeto", gameObject);
-        }
-        else
-        {
-            foreach (var conocido in objetosConocidos)
-            {
-                Debug.Log("el objeto " + conocido + " está en los objetos conocidos", gameObject);
-            }
-        }
+        objetosConocidos.Remove(other.gameObject);
     }
 }

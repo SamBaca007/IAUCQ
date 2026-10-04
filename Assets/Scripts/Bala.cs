@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class Bala : MonoBehaviour
 {
+    [Header("Configuración de la Bala")]
+    [Tooltip("Cantidad de daño que esta bala le hace a los enemigos")]
+    public int Damage = 1;
+
     [Tooltip("Tiempo en segundos antes de que la bala se autodestruya si no choca con nada")]
     [SerializeField] private float lifeTime = 3f;
 

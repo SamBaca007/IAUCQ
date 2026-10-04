@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
@@ -28,8 +27,14 @@ public class EnemigoBase : MonoBehaviour
 
     protected int myInt = 0;
 
+    [Header("Comportamiento Idle (Merodear)")]
+    [SerializeField] protected float wanderRadius = 5f;
+    [SerializeField] protected float wanderInterval = 2f;
+    protected float wanderTimer = 0f;
+    protected Vector3 wanderTargetPos;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    protected void Start()
+    protected virtual void Start()
     {
         SentidoDeVision = GetComponent<SentidoDeVision>();
         if (SentidoDeVision == null)
@@ -43,37 +48,70 @@ public class EnemigoBase : MonoBehaviour
             Debug.LogError("No hay componente Collider asignado a colliderPropio", gameObject);
         }
 
+        // NUEVO: Su primer objetivo de merodeo es donde está parado, no el centro del mapa
+        wanderTargetPos = transform.position;
+        wanderTimer = 0f;
     }
 
     // Update is called once per frame
-    void Update()
+    protected virtual void Update()
     {
+        // 1. Buscar al jugador con límite de distancia
         List<GameObject> objetosConocidos = SentidoDeVision.GetKnownObjects();
-        if (objetosConocidos.Count > 0)
+        Target = null;
+        float distanciaDeAggro = 10f;
+
+        foreach (var obj in objetosConocidos)
         {
-            Target = objetosConocidos[0];
-
-            // Documento original de los steering behaviors: https://www.red3d.com/cwr/papers/1999/gdc99steer.pdf
-
-            Vector3 steeringForce = Seek();
-
-            List<GameObject> obstaculosConocidos = SentidoDeVision.GetKnownObstacles();
-            foreach (var obstaculo in obstaculosConocidos)
+            if (obj != null && obj.layer == LayerMask.NameToLayer("Player"))
             {
-                float porcentaje = Mathf.Lerp(0, 1.0f,
-                    1.0f - Vector3.Distance(transform.position,
-                        obstaculo.transform.position) / SentidoDeVision.GetColliderDetectionRadius());
-                steeringForce += Flee(obstaculo.transform.position) * porcentaje;
+                if (Vector3.Distance(transform.position, obj.transform.position) <= distanciaDeAggro)
+                {
+                    Target = obj;
+                    break;
+                }
             }
+        }
 
+        if (Target != null)
+        {
+            // ESTADO: Perseguir al jugador (Comportamiento agresivo del cubo blanco)
+            Vector3 steeringForce = SteeringBehaviors.Seek(Target.transform.position, transform.position, maxSpeed, CurrentSpeed, maxForce);
+
+            // Esquivar paredes mientras persigue
+            steeringForce += CalcularEvasionParedes(3f);
+
+            steeringForce.y = 0f;
+            steeringForce = Vector3.ClampMagnitude(steeringForce, maxForce);
             ActualizarAceleracionVelocidadYPosicion(steeringForce);
- 
+
+            // Mirar al jugador mientras lo persigue
+            Vector3 direccionMirada = Target.transform.position - transform.position;
+            direccionMirada.y = 0f;
+            if (direccionMirada != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(direccionMirada.normalized);
+            }
         }
         else
         {
-            Target = null;
-        }
+            // ESTADO: Merodear (Idle)
+            Vector3 fuerzaWander = Wander();
+            Vector3 fuerzaEvasion = CalcularEvasionParedes(4f);
 
+            Vector3 steeringForce = fuerzaWander + fuerzaEvasion;
+            steeringForce.y = 0f;
+            steeringForce = Vector3.ClampMagnitude(steeringForce, maxForce);
+            ActualizarAceleracionVelocidadYPosicion(steeringForce);
+
+            // Mirar hacia donde camina
+            if (CurrentSpeed.sqrMagnitude > 0.01f)
+            {
+                Vector3 direccionMirada = CurrentSpeed;
+                direccionMirada.y = 0f;
+                transform.rotation = Quaternion.LookRotation(direccionMirada.normalized);
+            }
+        }
     }
 
     protected Vector3 Flee()
@@ -114,17 +152,27 @@ public class EnemigoBase : MonoBehaviour
 
     }
 
-    protected void OnCollisionEnter(Collision other)
+    // Usamos 'virtual' para que las clases hijas puedan usar 'override'
+    protected virtual void OnCollisionEnter(Collision other)
     {
         // 1. Recibir daño de las balas
         if (other.gameObject.layer == LayerMask.NameToLayer("AtaqueDeJugador"))
         {
-            Health--;
-            // Puntos extra: Aquí podrías llamar a una corrutina para que brille en rojo
+            // Buscamos el componente Bala para saber cuánto daño hace
+            Bala scriptBala = other.gameObject.GetComponent<Bala>();
+
+            if (scriptBala != null)
+            {
+                Health -= scriptBala.Damage; // Se resta el daño configurable
+            }
+            else
+            {
+                Health--; // Por si acaso choca con algo que no tiene el script
+            }
 
             if (Health <= 0)
             {
-                Destroy(gameObject); // Destruye al enemigo de la escena
+                Destroy(gameObject);
             }
         }
         // 2. Hacerle daño al jugador al tocarlo
@@ -135,11 +183,6 @@ public class EnemigoBase : MonoBehaviour
             {
                 player.TakeDamage(ContactDamage);
             }
-        }
-        // 3. Frenar en seco al chocar con una pared
-        else if (other.gameObject.layer == LayerMask.NameToLayer("Paredes"))
-        {
-            CurrentSpeed = Vector3.zero;
         }
     }
     protected void OnDrawGizmos()
@@ -154,5 +197,66 @@ public class EnemigoBase : MonoBehaviour
     protected void OnDrawGizmosSelected()
     {
         // Debug.Log("se está viendo la pestaña de Scene y este GameObject está seleccionado", gameObject);
+    }
+
+    // Genera una fuerza para que el enemigo camine a puntos aleatorios cercanos
+    protected bool isWanderInitialized = false;
+
+    protected Vector3 Wander()
+    {
+        // 1. Inicialización garantizada que ignora los problemas del Start()
+        if (!isWanderInitialized)
+        {
+            wanderTargetPos = transform.position;
+            wanderTimer = 0f;
+            isWanderInitialized = true;
+        }
+
+        wanderTimer -= Time.deltaTime;
+
+        // 2. Si el tiempo se acaba o llega a su destino
+        if (wanderTimer <= 0f || Vector3.Distance(transform.position, wanderTargetPos) < 1f)
+        {
+            // Busca un nuevo punto
+            Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * 3f;
+            wanderTargetPos = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
+
+            // Le damos entre 1 y 3 segundos de caminata antes de cambiar de rumbo
+            wanderTimer = wanderInterval + UnityEngine.Random.Range(-0.5f, 1f);
+        }
+
+        return SteeringBehaviors.Seek(wanderTargetPos, transform.position, maxSpeed * 0.4f, CurrentSpeed, maxForce);
+    }
+
+    protected Vector3 CalcularEvasionParedes(float multiplicador = 3f)
+    {
+        Vector3 fuerzaEvasion = Vector3.zero;
+        List<GameObject> obstaculosConocidos = SentidoDeVision.GetKnownObstacles();
+
+        foreach (var obstaculo in obstaculosConocidos)
+        {
+            if (obstaculo == this.gameObject || obstaculo.transform.IsChildOf(this.transform) || obstaculo == Target)
+                continue;
+
+            // EL SECRETO: Evitamos que huya de sus compañeros desde el otro lado del mapa
+            if (obstaculo.GetComponent<EnemigoBase>() != null) continue;
+
+            Collider col = obstaculo.GetComponent<Collider>();
+            Vector3 puntoPared = col != null ? col.ClosestPoint(transform.position) : obstaculo.transform.position;
+            float distancia = Vector3.Distance(transform.position, puntoPared);
+
+            // SEGUNDO SECRETO: Radio de evasión corto (3 unidades), independiente del enorme radio de visión
+            float radioEvasion = 3.0f;
+
+            if (distancia < radioEvasion)
+            {
+                float porcentaje = 1.0f - (distancia / radioEvasion);
+                Vector3 repulsion = (transform.position - puntoPared).normalized;
+                if (repulsion == Vector3.zero) repulsion = transform.forward;
+
+                fuerzaEvasion += repulsion * maxSpeed * porcentaje * multiplicador;
+            }
+        }
+        return fuerzaEvasion;
     }
 }

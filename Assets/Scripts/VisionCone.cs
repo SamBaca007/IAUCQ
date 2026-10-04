@@ -9,6 +9,8 @@ public class VisionCone : MonoBehaviour
 
     [Header("Configuración de Movimiento")]
     public float maxSpeed = 3.0f;
+    [Tooltip("Desmarca esta casilla para enemigos estáticos como Torretas")]
+    [SerializeField] private bool puedeMoverse = true; // Por defecto activo para los demás enemigos
 
     private SphereCollider _collider;
     public bool TargetOnSight = false;
@@ -24,9 +26,10 @@ public class VisionCone : MonoBehaviour
     {
         TargetOnSight = false;
     }
+
     private void OnTriggerStay(Collider other)
     {
-        if (other.name == "Target")
+        if (other.name == "Target" || other.CompareTag("Player"))
         {
             Vector3 vectorToTarget = other.transform.position - transform.position;
 
@@ -36,7 +39,14 @@ public class VisionCone : MonoBehaviour
             {
                 TargetOnSight = true;
                 Vector3 puntaMenosColaNormalizado = vectorToTarget.normalized;
-                transform.position += puntaMenosColaNormalizado * (Time.deltaTime * maxSpeed);
+
+                // Solo desplaza la posición si la casilla está marcada
+                if (puedeMoverse)
+                {
+                    transform.position += puntaMenosColaNormalizado * (Time.deltaTime * maxSpeed);
+                }
+
+                // Mantiene la capacidad de rotar a mirar al jugador
                 transform.forward = puntaMenosColaNormalizado;
             }
         }
@@ -68,7 +78,6 @@ public class VisionCone : MonoBehaviour
 
     private Vector3 PointForAngle(float angle)
     {
-        // Información sobre eulerAngles se consiguió de: https://docs.unity3d.com/es/530/ScriptReference/Transform-eulerAngles.html
         angle += transform.eulerAngles.y;
         return new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad), 0, Mathf.Cos(angle * Mathf.Deg2Rad)) * VisionDistance;
     }

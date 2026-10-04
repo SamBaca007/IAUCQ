@@ -1,101 +1,185 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
-using Unity.VisualScripting;
 using UnityEngine;
-
-// Para más explicaciones sobre corrutinas, este video está cortito y muy útil:
-// https://youtu.be/kUP6OK36nrM?si=qSSAzcoA13nC6j8m
 
 public class EnemigoAlternante : EnemigoBase
 {
+    [Header("Configuración de Comportamiento")]
+    [SerializeField] private float FleeTime = 3.0f;
+    [SerializeField] private float RestingTime = 2.0f;
+    private bool _isResting = false;
 
-    private bool _estaUsandoSeek = true;
-    [SerializeField] private float tiempoParaCambiarEntreSeekYFlee = 2.0f;
-    private float _tiempoTranscurrido = 0.0f;
+    [Header("Configuración de Disparo")]
+    public GameObject enemyBulletPrefab;
+    public Transform firePoint;
+    public float bulletSpeed = 15f;
 
-    private Coroutine _coroutineImprimirCada5SegundosHastaQueMeDetengan;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     new void Start()
     {
-        base.Start();
+        base.Start(); // Muy importante para inicializar el SentidoDeVision de la clase padre
 
-        StartCoroutine(ImprimirCadaSegundoDuranteDiezSegundos());
-        if (_coroutineImprimirCada5SegundosHastaQueMeDetengan == null) 
-            _coroutineImprimirCada5SegundosHastaQueMeDetengan = StartCoroutine(
-            ImprimirCada5SegundosHastaQueMeDetengan());
+        // Iniciamos el ciclo de huir y descansar
+        StartCoroutine(RutinaHuirYDescansar());
     }
 
-    // Update is called once per frame
-    void Update()
+    protected override void Update()
     {
+        // 1. Filtrar la visión para encontrar EXCLUSIVAMENTE al jugador a una distancia justa
         List<GameObject> objetosConocidos = SentidoDeVision.GetKnownObjects();
-        if (objetosConocidos.Count > 0)
+        Target = null;
+
+        // Distancia máxima a la que el enemigo "decide" huir, sin importar qué tan grande sea su collider
+        float distanciaDeAggro = 10f;
+
+        foreach (var obj in objetosConocidos)
         {
-            AlternarSeekYFlee();
-
-            Target = objetosConocidos[0];
-
-            // Documento original de los steering behaviors: https://www.red3d.com/cwr/papers/1999/gdc99steer.pdf
-
-            Vector3 steeringForce;
-            if (_estaUsandoSeek)
+            if (obj != null && obj.layer == LayerMask.NameToLayer("Player"))
             {
-                steeringForce = Seek();
+                // Solo se asusta si el jugador está realmente cerca
+                if (Vector3.Distance(transform.position, obj.transform.position) <= distanciaDeAggro)
+                {
+                    Target = obj;
+                    break;
+                }
+            }
+        }
+
+        if (Target != null)
+        {
+            if (!_isResting)
+            {
+                // ESTADO: Huir (Alejarse del jugador de forma pura)
+                Vector3 direccionHuir = (transform.position - Target.transform.position).normalized;
+                Vector3 velocidadDeseada = direccionHuir * maxSpeed;
+
+                // ESTADO: Esquivar paredes (deslizarse, no atascarse)
+                List<GameObject> obstaculosConocidos = SentidoDeVision.GetKnownObstacles();
+                foreach (var obstaculo in obstaculosConocidos)
+                {
+                    if (obstaculo == this.gameObject || obstaculo.transform.IsChildOf(this.transform) || obstaculo == Target)
+                        continue;
+
+                    Collider col = obstaculo.GetComponent<Collider>();
+                    Vector3 puntoPared = col != null ? col.ClosestPoint(transform.position) : obstaculo.transform.position;
+                    float distancia = Vector3.Distance(transform.position, puntoPared);
+                    float radio = SentidoDeVision.GetColliderDetectionRadius();
+
+                    if (distancia < radio)
+                    {
+                        float porcentaje = 1.0f - (distancia / radio);
+                        Vector3 repulsion = (transform.position - puntoPared).normalized;
+                        if (repulsion == Vector3.zero) repulsion = transform.forward;
+
+                        // Empuje lateral para resbalar de la pared
+                        velocidadDeseada += repulsion * maxSpeed * porcentaje * 3f;
+                    }
+                }
+
+                velocidadDeseada.y = 0f;
+                Vector3 steeringForce = velocidadDeseada - CurrentSpeed;
+                steeringForce = Vector3.ClampMagnitude(steeringForce, maxForce);
+
+                ActualizarAceleracionVelocidadYPosicion(steeringForce);
+
+                // NUEVO: Mantener la mirada clavada en el jugador mientras huye hacia atrás
+                Vector3 direccionAlJugador = Target.transform.position - transform.position;
+                direccionAlJugador.y = 0f;
+                if (direccionAlJugador != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(direccionAlJugador.normalized);
+                }
             }
             else
             {
-                steeringForce = Flee();
+                // ESTADO: Descansar y apuntar
+                CurrentSpeed = Vector3.Lerp(CurrentSpeed, Vector3.zero, Time.deltaTime * 5f);
+                CurrentSpeed.y = 0f;
+                transform.position += CurrentSpeed * Time.deltaTime;
+
+                Vector3 direccionAlJugador = Target.transform.position - transform.position;
+                direccionAlJugador.y = 0f;
+                if (direccionAlJugador != Vector3.zero)
+                {
+                    Quaternion rotacionDeseada = Quaternion.LookRotation(direccionAlJugador.normalized);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, rotacionDeseada, Time.deltaTime * 10f);
+                }
             }
+        }
+        else
+        {
+            // ESTADO: Merodear (Idle)
+            Vector3 fuerzaWander = Wander();
+            Vector3 fuerzaEvasion = CalcularEvasionParedes(4f);
+
+            // Sumamos la caminata y la evasión suavemente. 
+            // Ya no dejamos que la evasión tome el control absoluto.
+            Vector3 steeringForce = fuerzaWander + fuerzaEvasion;
+
+            steeringForce.y = 0f;
+            steeringForce = Vector3.ClampMagnitude(steeringForce, maxForce);
 
             ActualizarAceleracionVelocidadYPosicion(steeringForce);
+
+            // Girar de forma natural hacia donde está caminando
+            if (CurrentSpeed.sqrMagnitude > 0.01f)
+            {
+                Vector3 direccionMirada = CurrentSpeed;
+                direccionMirada.y = 0f;
+                transform.rotation = Quaternion.LookRotation(direccionMirada.normalized);
+            }
         }
-        else
-        {
-            Target = null;
-        }
-
-
-
     }
-    private IEnumerator ImprimirCadaSegundoDuranteDiezSegundos()
+
+    private IEnumerator RutinaHuirYDescansar()
     {
-        for (int i = 0; i < 10; i++)
-        {
-            yield return new WaitForSeconds(1.0f);
-            Debug.Log($"Han pasado: {i} segundos");
-        }
-        StopCoroutine(_coroutineImprimirCada5SegundosHastaQueMeDetengan);
-        _coroutineImprimirCada5SegundosHastaQueMeDetengan = null;
-    }
-    private IEnumerator ImprimirCada5SegundosHastaQueMeDetengan()
-    {
-        int tiempoTranscurrido = 0;
         while (true)
         {
-            yield return new WaitForSeconds(5.0f);
-            tiempoTranscurrido += 5;
-            Debug.Log($"Han pasado: {tiempoTranscurrido} segundos");
+            // ESTADO 1: Huir
+            _isResting = false;
+            yield return new WaitForSeconds(FleeTime);
+
+            // ESTADO 2: Cansarse/Descansar (Inicia el giro hacia el jugador)
+            _isResting = true;
+
+            // Le damos 0.75 segundos para que voltee a verte ANTES de disparar.
+            // Esto evita que le dispare a la pared y le da una advertencia al jugador.
+            yield return new WaitForSeconds(0.75f);
+
+            DispararPredictivo();
+
+            // Espera su tiempo de descanso restante antes de volver a correr
+            yield return new WaitForSeconds(RestingTime);
         }
     }
-    void AlternarSeekYFlee()
+
+    private void DispararPredictivo()
     {
-        _tiempoTranscurrido += Time.deltaTime;
-        if (_tiempoTranscurrido >= tiempoParaCambiarEntreSeekYFlee)
+        if (Target == null || enemyBulletPrefab == null || firePoint == null) return;
+
+        // 1. Necesitamos la velocidad actual del jugador
+        Vector3 velocidadJugador = Vector3.zero;
+        Rigidbody rbJugador = Target.GetComponent<Rigidbody>();
+        if (rbJugador != null)
         {
-            _estaUsandoSeek = !_estaUsandoSeek;
-            _tiempoTranscurrido = 0.0f;
+            velocidadJugador = rbJugador.linearVelocity;
         }
-    }
-    protected new void OnDrawGizmos()
-    {
-        if (_estaUsandoSeek)
-            Gizmos.color = Color.red;
-        else
-            Gizmos.color = Color.yellow;
 
+        // 2. ¿Cuánto tardará la bala en llegar desde aquí hasta donde está el jugador ahora?
+        float distancia = Vector3.Distance(firePoint.position, Target.transform.position);
+        float tiempoDeViajeEstimado = distancia / bulletSpeed;
 
-        base.OnDrawGizmos();
+        // 3. Sabiendo el tiempo, ¿dónde estará el jugador para cuando la bala llegue ahí?
+        Vector3 posicionFuturaJugador = Target.transform.position + (velocidadJugador * tiempoDeViajeEstimado);
+
+        // 4. Calculamos la dirección de disparo hacia esa posición futura
+        Vector3 direccionDisparo = (posicionFuturaJugador - firePoint.position).normalized;
+
+        // 5. Creamos la bala y la disparamos
+        GameObject bala = Instantiate(enemyBulletPrefab, firePoint.position, Quaternion.LookRotation(direccionDisparo));
+        Rigidbody rbBala = bala.GetComponent<Rigidbody>();
+        if (rbBala != null)
+        {
+            rbBala.linearVelocity = direccionDisparo * bulletSpeed;
+        }
     }
 }
