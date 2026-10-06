@@ -917,7 +917,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7aa4ce331841b94087d13da3d36d8cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SentidoDeVision
-  radioDeColliderDeDeteccion: 5
+  radioDeColliderDeDeteccion: 8
   objetosConocidos:
   - {fileID: 2001859126}
 --- !u!135 &693242173
