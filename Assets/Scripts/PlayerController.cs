@@ -13,6 +13,11 @@ public class PlayerController : MonoBehaviour
     public Transform puntoDeDisparo; // Un objeto vacío hijo del player para saber de dónde sale la bala
     public float velocidadBala = 15f;
 
+    [Header("Configuración de Controles")]
+    public KeyCode teclaDisparo = KeyCode.Space;
+    [Tooltip("0 = Clic Izquierdo, 1 = Clic Derecho, 2 = Botón central")]
+    public int botonRatonDisparo = 0;
+
     private Rigidbody rb;
     private Vector3 MovementDirection;
 
@@ -44,15 +49,9 @@ public class PlayerController : MonoBehaviour
             // pero con esto es instantáneo y muy �til para shooters tipo Binding of Isaac.
         }
         // 2. Disparo
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(teclaDisparo) || Input.GetMouseButtonDown(botonRatonDisparo))
         {
             Disparar();
-        }
-
-        // 3. Reinicio de nivel manual
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            RestartLevel();
         }
     }
 
