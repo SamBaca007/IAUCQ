@@ -4,31 +4,51 @@ using UnityEngine;
 
 public class SentidoDeVision : MonoBehaviour
 {
-    [SerializeField]
-    private float radioDeColliderDeDeteccion = 5.0f;
+    [Header("Configuración de Detección")]
+    [SerializeField] private float radioDeColliderDeDeteccion = 5.0f;
+
+    [Tooltip("Nombre de la capa para añadir a la lista de obstáculos conocidos")]
+    [SerializeField] private string capaParedes = "Paredes";
+
+    [Tooltip("Capas físicas que cortarán la línea de visión (Ej. Paredes, Obstáculos)")]
+    [SerializeField] private LayerMask capasQueBloqueanVision;
+
+    private SphereCollider _colliderDeDeteccion;
+
+    [SerializeField] private List<GameObject> objetosConocidos = new List<GameObject>();
+    private List<GameObject> obstaculosConocidos = new List<GameObject>();
 
     public float GetColliderDetectionRadius()
     {
         return radioDeColliderDeDeteccion;
     }
 
-    private SphereCollider _colliderDeDeteccion;
-
-    [SerializeField]
-    private List<GameObject> objetosConocidos = new List<GameObject>();
-
     public List<GameObject> GetKnownObjects()
     {
-        return objetosConocidos;
+        List<GameObject> objetosVisibles = new List<GameObject>();
+
+        foreach (var obj in objetosConocidos)
+        {
+            if (obj == null) continue;
+
+            Vector3 direccion = obj.transform.position - transform.position;
+            float distancia = direccion.magnitude;
+
+            // Trazamos un rayo desde el enemigo hacia el objeto. 
+            // Si NO choca con las capas bloqueadoras, significa que lo estamos viendo.
+            if (!Physics.Raycast(transform.position, direccion.normalized, distancia, capasQueBloqueanVision))
+            {
+                objetosVisibles.Add(obj);
+            }
+        }
+        return objetosVisibles;
     }
 
-    private List<GameObject> obstaculosConocidos = new List<GameObject>();
     public List<GameObject> GetKnownObstacles()
     {
         return obstaculosConocidos;
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         _colliderDeDeteccion = GetComponent<SphereCollider>();
@@ -39,19 +59,11 @@ public class SentidoDeVision : MonoBehaviour
         }
 
         _colliderDeDeteccion.radius = radioDeColliderDeDeteccion;
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // 1. Si el objeto está en la capa "Paredes" (o "Obstaculos"), lo añade a la lista de obstáculos
-        if (other.gameObject.layer == LayerMask.NameToLayer("Paredes"))
+        if (other.gameObject.layer == LayerMask.NameToLayer(capaParedes))
         {
             if (!obstaculosConocidos.Contains(other.gameObject))
             {
@@ -60,7 +72,6 @@ public class SentidoDeVision : MonoBehaviour
             return;
         }
 
-        // 2. Si no es pared, se procesa como objeto conocido (Jugador, otros entes)
         if (!objetosConocidos.Contains(other.gameObject))
         {
             objetosConocidos.Add(other.gameObject);
@@ -69,8 +80,7 @@ public class SentidoDeVision : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        // Remueve obstáculos o paredes cuando el enemigo se aleja de ellos
-        if (other.gameObject.layer == LayerMask.NameToLayer("Paredes"))
+        if (other.gameObject.layer == LayerMask.NameToLayer(capaParedes))
         {
             obstaculosConocidos.Remove(other.gameObject);
             return;

@@ -22,6 +22,10 @@ public class EnemigoBase : MonoBehaviour
     [SerializeField] protected int ContactDamage = 1;
     [SerializeField] protected Collider OwnCollider;
 
+    [Header("Capas de Interacción")]
+    [SerializeField] protected string capaAtaqueJugador = "AtaqueDeJugador";
+    [SerializeField] protected string capaJugador = "Player";
+
     protected SentidoDeVision SentidoDeVision;
     protected GameObject Target;
 
@@ -156,18 +160,17 @@ public class EnemigoBase : MonoBehaviour
     protected virtual void OnCollisionEnter(Collision other)
     {
         // 1. Recibir daño de las balas
-        if (other.gameObject.layer == LayerMask.NameToLayer("AtaqueDeJugador"))
+        if (other.gameObject.layer == LayerMask.NameToLayer(capaAtaqueJugador))
         {
-            // Buscamos el componente Bala para saber cuánto daño hace
             Bala scriptBala = other.gameObject.GetComponent<Bala>();
 
             if (scriptBala != null)
             {
-                Health -= scriptBala.Damage; // Se resta el daño configurable
+                Health -= scriptBala.Damage;
             }
             else
             {
-                Health--; // Por si acaso choca con algo que no tiene el script
+                Health--;
             }
 
             if (Health <= 0)
@@ -176,7 +179,7 @@ public class EnemigoBase : MonoBehaviour
             }
         }
         // 2. Hacerle daño al jugador al tocarlo
-        else if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        else if (other.gameObject.layer == LayerMask.NameToLayer(capaJugador))
         {
             PlayerController player = other.gameObject.GetComponent<PlayerController>();
             if (player != null)

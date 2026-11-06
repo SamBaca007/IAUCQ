@@ -2,7 +2,7 @@ using UnityEngine;
 // Obligatorio incluir esta librería para acceder a las clases de navegación
 using UnityEngine.AI;
 
-public class NavigatorAgent : MonoBehaviour
+public class NavigatorAgentChase : MonoBehaviour
 {
     [Tooltip("El objetivo hacia el cual se moverá el agente (ej. el Jugador).")]
     public Transform objetivo;
