@@ -8,13 +8,14 @@ public class NavigatorAgentFlee : MonoBehaviour
     [SerializeField] private float distanciaDeHuida = 5f;
 
     private NavMeshAgent agente;
+    private Vector3 ultimoPuntoHuida;
+    private bool tienePuntoValido = false;
 
     void Start()
     {
         agente = GetComponent<NavMeshAgent>();
     }
 
-    // Cambiamos Update por un método público que será controlado externamente
     public void EjecutarHuida()
     {
         if (objetivo != null && agente != null && agente.isActiveAndEnabled)
@@ -25,8 +26,32 @@ public class NavigatorAgentFlee : MonoBehaviour
             NavMeshHit hit;
             if (NavMesh.SamplePosition(puntoDeseado, out hit, distanciaDeHuida, NavMesh.AllAreas))
             {
+                ultimoPuntoHuida = hit.position;
+                tienePuntoValido = true;
                 agente.SetDestination(hit.position);
             }
+            else
+            {
+                // Requisito C.2: Si el punto de Flee no es válido, intentar hacia la dirección del jugador
+                Vector3 puntoOpuesto = transform.position - direccionHuida.normalized * distanciaDeHuida;
+                if (NavMesh.SamplePosition(puntoOpuesto, out hit, distanciaDeHuida, NavMesh.AllAreas))
+                {
+                    ultimoPuntoHuida = hit.position;
+                    tienePuntoValido = true;
+                    agente.SetDestination(hit.position);
+                }
+            }
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (tienePuntoValido)
+        {
+            // Dibujar gizmo de la posición a la que huye (Triángulo/Esfera Magenta)
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawSphere(ultimoPuntoHuida, 0.4f);
+            Gizmos.DrawLine(transform.position, ultimoPuntoHuida);
         }
     }
 }
